@@ -48,6 +48,8 @@ namespace ThiefMD {
             preview_box.hexpand = true;
             preview_box.vexpand = true;
 
+            Gtk.Settings.get_default ().gtk_application_prefer_dark_theme = (filter == "dark");
+
             preview_box.add (view);
             add (preview_box);
             set_size_request (ss_width, ss_height);
@@ -140,6 +142,7 @@ namespace ThiefMD {
             var main_window = new Gtk.ApplicationWindow (this);
             Gtk.Label label = new Gtk.Label ("Working...");
             main_window.add (label);
+            main_window.set_size_request (1200, 1200);
             main_window.show_all ();
             work ();
             label.set_label ("Done.");
