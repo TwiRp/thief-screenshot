@@ -43,11 +43,17 @@ namespace ThiefMD {
                     get_position (out x, out y);
                     warning ("At %d, %d", x, y);
                     Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
-                    
-                    if (filter != "preview") {
-                        ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
-                    } else {
-                        ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+                    File org_check = File.new_for_path (Path.build_filename (theme_file.get_path (), filter + ".css"));
+                    if (org_check.query_exists ()) {
+                        File preview_exists = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-preview.png"));
+                        if (filter != "preview") {
+                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
+                        } else {
+                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+                        }
+                        if (!preview_exists.query_exists ()) {
+                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+                        }
                     }
                 } catch (Error e) {
                     warning ("Could not generate screenshot: %s", e.message);
@@ -178,7 +184,6 @@ namespace ThiefMD {
                         todo.add (file_name);
                     }
                 }
-                work_it (todo);
 
                 Gee.LinkedList<string> also_todo = new Gee.LinkedList<string>();
                 theme_dir = Dir.open ("./export-css", 0);
@@ -188,7 +193,9 @@ namespace ThiefMD {
                         also_todo.add (file_name);
                     }
                 }
-                work_it2 (also_todo);
+
+                work_it (todo, also_todo);
+
             } catch (Error e) {
                 warning ("Could not parse themes: %s", e.message);
             }
@@ -204,13 +211,14 @@ namespace ThiefMD {
             preview.destroy.connect (() => {
                 CssPreviewer preview2 = new CssPreviewer (dir, "print");
                 preview2.destroy.connect (() => {
-                    work_it (items);
+                    work_it2 (items);
                 });
             });
         }
 
-        public void work_it (Gee.LinkedList<string> items) {
+        public void work_it (Gee.LinkedList<string> items, Gee.LinkedList<string> items2) {
             if (items.is_empty) {
+                work_it2 (items2);
                 return;
             }
 
@@ -219,7 +227,7 @@ namespace ThiefMD {
             preview.destroy.connect (() => {
                 ThemePreviewer preview2 = new ThemePreviewer (dir, "light");
                 preview2.destroy.connect (() => {
-                    work_it (items);
+                    work_it (items, items2);
                 });
             });
         }
