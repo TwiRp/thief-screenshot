@@ -6,20 +6,11 @@ namespace ThiefMD {
     public const string IPSUM = """# %s
 *Emphasized* text. **Strong** text. [Link to page](https://github.com)
 ## Lists
-
 1. First item
 2. Second item
 3. Third item
-
 > Block Quote
 > - Famous Amos
-
-* First item
-* `Second` item
-* Third item
-
-***
-
 ```vala
     switch (target_type) {
         case Target.STRING:

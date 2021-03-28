@@ -1,8 +1,8 @@
 using Gdk;
-
+using ThiefMD.Enrichments;
 namespace ThiefMD {
-    public const int ss_width = 400;
-    public const int ss_height = 200;
+    public const int ss_width = 550;
+    public const int ss_height = 275;
 
     public class CssPreviewer : Gtk.Window {
         private Preview view;
@@ -96,6 +96,51 @@ namespace ThiefMD {
             build_ui ();
         }
 
+        private Gtk.SourceLanguageManager thief_languages;
+        private Gtk.SourceLanguageManager get_language_manager () {
+            if (thief_languages == null) {
+                thief_languages = new Gtk.SourceLanguageManager ();
+                string custom_languages = "/usr/local/share/com.github.kmwallio.thiefmd/gtksourceview-4/language-specs/";
+                string[] language_paths = {
+                    custom_languages
+                };
+                thief_languages.set_search_path (language_paths);
+    
+                var markdown = thief_languages.get_language ("markdown");
+                if (markdown == null) {
+                    warning ("Could not load custom languages");
+                    thief_languages = Gtk.SourceLanguageManager.get_default ();
+                }
+            }
+    
+            return thief_languages;
+        }
+
+        public Gtk.SourceLanguage get_source_language (string filename = "something.md") {
+            var languages = get_language_manager ();
+            Gtk.SourceLanguage? language = null;
+            string file_name = filename.down ();
+    
+            if (file_name.has_suffix (".bib") || file_name.has_suffix (".bibtex")) {
+                language = languages.get_language ("bibtex");
+                if (language == null) {
+                    language = languages.guess_language (null, "text/x-bibtex");
+                }
+            } else if (file_name.has_suffix (".fountain") || file_name.has_suffix (".fou") || file_name.has_suffix (".spmd")) {
+                language = languages.get_language ("fountain");
+                if (language == null) {
+                    language = languages.guess_language (null, "text/fountain");
+                }
+            } else {
+                language = languages.get_language ("markdown");
+                if (language == null) {
+                    language = languages.guess_language (null, "text/markdown");
+                }
+            }
+    
+            return language;
+        }
+
         private void build_ui () {
             theme_path = Path.build_path (Path.DIR_SEPARATOR_S, ".", "themes", dir);
             theme_file = File.new_for_path (theme_path);
@@ -104,12 +149,9 @@ namespace ThiefMD {
             preview_manager.append_search_path (theme_file.get_path ());
             preview_manager.force_rescan ();
 
-            var manager = Gtk.SourceLanguageManager.get_default ();
-            var language = manager.guess_language (null, "text/markdown");
-
             view = new Gtk.SourceView ();
             view.margin = 0;
-            buffer = new Gtk.SourceBuffer.with_language (language);
+            buffer = new Gtk.SourceBuffer.with_language (get_source_language ("my.md"));
 
             var style = preview_manager.get_scheme (dir + "-" + filter);
             print ("  Loaded %s\n", style.get_id ());
@@ -120,6 +162,9 @@ namespace ThiefMD {
             view.set_buffer (buffer);
             view.set_wrap_mode (Gtk.WrapMode.WORD);
             buffer.text = IPSUM.printf(gen_title (dir + "-" + filter));
+            MarkdownEnrichment markdown = new MarkdownEnrichment (Path.build_path (Path.DIR_SEPARATOR_S, ".", "themes", dir) + "/" + dir + "-" + filter + ".xml");
+            markdown.attach (view);
+            markdown.recheck_all ();
 
             var preview_box = new Gtk.ScrolledWindow (null, null);
             preview_box.hexpand = true;

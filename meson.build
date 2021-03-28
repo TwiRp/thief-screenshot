@@ -42,6 +42,7 @@ executable(
     meson.project_name(),
     'src/Application.vala',
     'src/Constants.vala',
+    'src/Markdown.vala',
     c_args: c_args,
     dependencies: [
         dependency('gobject-2.0'),
