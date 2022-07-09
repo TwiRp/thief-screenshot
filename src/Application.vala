@@ -24,13 +24,13 @@ namespace ThiefMD {
             print ("  Looking in %s\n", theme_file.get_path ());
             view = new Preview (dir, filter);
             view.update_html_view ();
-            view.zoom_level = 0.5;
+            // view.zoom_level = 0.5;
 
             Gtk.Settings.get_default ().gtk_application_prefer_dark_theme = view.am_dark;
 
-            add (view);
+            set_child (view);
             set_size_request (ss_width, ss_height);
-            show_all ();
+            show ();
             if (filter != "preview") {
                 set_title (gen_title (dir + "-" + filter));
             } else {
@@ -39,10 +39,9 @@ namespace ThiefMD {
 
             Timeout.add (1000, () => {
                 try {
-                    int x, y;
-                    get_position (out x, out y);
+                    int x = 0, y = 0;
                     warning ("At %d, %d", x, y);
-                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
+                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_surface (get_surface ().create_cairo_context ().cairo_create ().get_target (), x, y, ss_width, ss_height);
                     File org_check = File.new_for_path (Path.build_filename (theme_file.get_path (), filter + ".css"));
                     if (org_check.query_exists ()) {
                         File preview_exists = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-preview.png"));
@@ -81,25 +80,27 @@ namespace ThiefMD {
     }
 
     public class ThemePreviewer : Gtk.Window {
-        private Gtk.SourceView view;
-        private Gtk.SourceBuffer buffer;
-        private Gtk.SourceStyleSchemeManager preview_manager;
+        private GtkSource.View view;
+        private GtkSource.Buffer buffer;
+        private GtkSource.StyleSchemeManager preview_manager;
         private string dir;
         private string theme_path;
         public File theme_file;
         private string filter;
+        private Gtk.WidgetPaintable paint;
 
         public ThemePreviewer (string theme, string type) {
             stdout.printf ("  Generating %s\n", theme);
+            paint = new Gtk.WidgetPaintable (this);
             dir = theme;
             filter = type;
             build_ui ();
         }
 
-        private Gtk.SourceLanguageManager thief_languages;
-        private Gtk.SourceLanguageManager get_language_manager () {
+        private GtkSource.LanguageManager thief_languages;
+        private GtkSource.LanguageManager get_language_manager () {
             if (thief_languages == null) {
-                thief_languages = new Gtk.SourceLanguageManager ();
+                thief_languages = new GtkSource.LanguageManager ();
                 string custom_languages = "/usr/local/share/com.github.kmwallio.thiefmd/gtksourceview-4/language-specs/";
                 string[] language_paths = {
                     custom_languages
@@ -109,16 +110,16 @@ namespace ThiefMD {
                 var markdown = thief_languages.get_language ("markdown");
                 if (markdown == null) {
                     warning ("Could not load custom languages");
-                    thief_languages = Gtk.SourceLanguageManager.get_default ();
+                    thief_languages = GtkSource.LanguageManager.get_default ();
                 }
             }
     
             return thief_languages;
         }
 
-        public Gtk.SourceLanguage get_source_language (string filename = "something.md") {
+        public GtkSource.Language get_source_language (string filename = "something.md") {
             var languages = get_language_manager ();
-            Gtk.SourceLanguage? language = null;
+            GtkSource.Language? language = null;
             string file_name = filename.down ();
     
             if (file_name.has_suffix (".bib") || file_name.has_suffix (".bibtex")) {
@@ -145,13 +146,12 @@ namespace ThiefMD {
             theme_path = Path.build_path (Path.DIR_SEPARATOR_S, ".", "themes", dir);
             theme_file = File.new_for_path (theme_path);
             print ("  Looking in %s\n", theme_file.get_path ());
-            preview_manager = new Gtk.SourceStyleSchemeManager ();
+            preview_manager = new GtkSource.StyleSchemeManager ();
             preview_manager.append_search_path (theme_file.get_path ());
             preview_manager.force_rescan ();
 
-            view = new Gtk.SourceView ();
-            view.margin = 0;
-            buffer = new Gtk.SourceBuffer.with_language (get_source_language ("my.md"));
+            view = new GtkSource.View ();
+            buffer = new GtkSource.Buffer.with_language (get_source_language ("my.md"));
 
             var style = preview_manager.get_scheme (dir + "-" + filter);
             print ("  Loaded %s\n", style.get_id ());
@@ -166,24 +166,25 @@ namespace ThiefMD {
             markdown.attach (view);
             markdown.recheck_all ();
 
-            var preview_box = new Gtk.ScrolledWindow (null, null);
+            var preview_box = new Gtk.ScrolledWindow ();
             preview_box.hexpand = true;
             preview_box.vexpand = true;
 
             Gtk.Settings.get_default ().gtk_application_prefer_dark_theme = (filter == "dark");
 
-            preview_box.add (view);
-            add (preview_box);
+            preview_box.set_child (view);
+            set_child (preview_box);
             set_size_request (ss_width, ss_height);
-            show_all ();
+            show ();
             set_title (gen_title (dir + "-" + filter));
 
             Timeout.add (1000, () => {
                 try {
-                    int x, y;
-                    get_position (out x, out y);
+                    int x = 0, y = 0;
                     warning ("At %d, %d", x, y);
-                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
+                    Snapshot snap = new Snapshot ();
+                    paint.snapshot (snap, ss_width, ss_height);
+                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_surface (get_surface ().create_cairo_context ().cairo_create ().get_target (), x, y, ss_width, ss_height);
                     ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
                 } catch (Error e) {
                     warning ("Could not generate screenshot: %s", e.message);
@@ -253,11 +254,13 @@ namespace ThiefMD {
 
             string dir = items.poll ();
             CssPreviewer preview = new CssPreviewer (dir, "preview");
-            preview.destroy.connect (() => {
+            preview.close_request.connect (() => {
                 CssPreviewer preview2 = new CssPreviewer (dir, "print");
-                preview2.destroy.connect (() => {
+                preview2.close_request.connect (() => {
                     work_it2 (items);
+                    return false;
                 });
+                return false;
             });
         }
 
@@ -269,30 +272,34 @@ namespace ThiefMD {
 
             string dir = items.poll ();
             ThemePreviewer preview = new ThemePreviewer (dir, "dark");
-            preview.destroy.connect (() => {
+            preview.close_request.connect (() => {
                 ThemePreviewer preview2 = new ThemePreviewer (dir, "light");
-                preview2.destroy.connect (() => {
+                preview2.close_request.connect (() => {
                     work_it (items, items2);
+                    return false;
                 });
+                return false;
             });
         }
 
         public void parse_dir (string dir) throws Error {
             ThemePreviewer preview = new ThemePreviewer (dir, "dark");
-            preview.destroy.connect (() => {
+            preview.close_request.connect (() => {
                 ThemePreviewer preview2 = new ThemePreviewer (dir, "light");
-                preview2.destroy.connect (() => {
+                preview2.close_request.connect (() => {
                     warning ("done");
+                    return false;
                 });
+                return false;
             });
         }
 
         protected override void activate () {
             var main_window = new Gtk.ApplicationWindow (this);
             Gtk.Label label = new Gtk.Label ("Working...");
-            main_window.add (label);
+            main_window.set_child (label);
             main_window.set_size_request (1200, 1200);
-            main_window.show_all ();
+            main_window.show ();
             work ();
             label.set_label ("Done.");
         }

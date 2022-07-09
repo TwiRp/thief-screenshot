@@ -1,6 +1,5 @@
 using Gtk;
 using Gdk;
-using WebKit;
 
 namespace ThiefMD {
     public const string IPSUM = """# %s
@@ -46,35 +45,35 @@ I'm basically ~~stealing~~ copying and pasting examples from [https://www.markdo
 
 $$\int_{a}^{b} x^2 dx$$
 """;
-    public class Preview : WebKit.WebView {
+    public class Preview : Gtk.Widget { //: WebKit.WebView {
         public string html;
         public string cssname = "";
         public string css_type = "";
         public bool am_dark = false;
 
         public Preview (string css_theme, string type) {
-            Object(user_content_manager: new UserContentManager());
+            //  Object(user_content_manager: new UserContentManager());
             cssname = css_theme;
             css_type = type;
-            visible = true;
-            vexpand = true;
-            hexpand = true;
-            var settingsweb = get_settings();
-            settingsweb.enable_plugins = false;
-            settingsweb.enable_page_cache = false;
-            settingsweb.enable_developer_extras = false;
-            settingsweb.javascript_can_open_windows_automatically = false;
-            connect_signals ();
+            //  visible = true;
+            //  vexpand = true;
+            //  hexpand = true;
+            //  var settingsweb = get_settings();
+            //  settingsweb.enable_plugins = false;
+            //  settingsweb.enable_page_cache = false;
+            //  settingsweb.enable_developer_extras = false;
+            //  settingsweb.javascript_can_open_windows_automatically = false;
+            //  connect_signals ();
 
         }
 
-        protected override bool context_menu (
-            ContextMenu context_menu,
-            Gdk.Event event,
-            HitTestResult hit_test_result
-        ) {
-            return true;
-        }
+        //  protected override bool context_menu (
+        //      ContextMenu context_menu,
+        //      Gdk.Event event,
+        //      HitTestResult hit_test_result
+        //  ) {
+        //      return true;
+        //  }
 
         public string set_stylesheet () {
             string style = "\n<style>\n";
@@ -127,43 +126,43 @@ $$\int_{a}^{b} x^2 dx$$
             return style;
         }
 
-        private void connect_signals () {
-            create.connect ((navigation_action) => {
-                launch_browser (navigation_action.get_request().get_uri ());
-                return (Gtk.Widget) null;
-            });
+        //  private void connect_signals () {
+        //      create.connect ((navigation_action) => {
+        //          launch_browser (navigation_action.get_request().get_uri ());
+        //          return (Gtk.Widget) null;
+        //      });
 
-            decide_policy.connect ((decision, type) => {
-                switch (type) {
-                    case WebKit.PolicyDecisionType.NEW_WINDOW_ACTION:
-                        if (decision is WebKit.ResponsePolicyDecision) {
-                            WebKit.ResponsePolicyDecision response_decision = (decision as WebKit.ResponsePolicyDecision);
-                            if (response_decision != null && 
-                                response_decision.request != null)
-                            {
-                                launch_browser (response_decision.request.get_uri ());
-                            }
-                        }
-                    break;
-                    case WebKit.PolicyDecisionType.RESPONSE:
-                        if (decision is WebKit.ResponsePolicyDecision) {
-                            var policy = (WebKit.ResponsePolicyDecision) decision;
-                            launch_browser (policy.request.get_uri ());
-                            return false;
-                        }
-                    break;
-                }
+        //      decide_policy.connect ((decision, type) => {
+        //          switch (type) {
+        //              case WebKit.PolicyDecisionType.NEW_WINDOW_ACTION:
+        //                  if (decision is WebKit.ResponsePolicyDecision) {
+        //                      WebKit.ResponsePolicyDecision response_decision = (decision as WebKit.ResponsePolicyDecision);
+        //                      if (response_decision != null && 
+        //                          response_decision.request != null)
+        //                      {
+        //                          launch_browser (response_decision.request.get_uri ());
+        //                      }
+        //                  }
+        //              break;
+        //              case WebKit.PolicyDecisionType.RESPONSE:
+        //                  if (decision is WebKit.ResponsePolicyDecision) {
+        //                      var policy = (WebKit.ResponsePolicyDecision) decision;
+        //                      launch_browser (policy.request.get_uri ());
+        //                      return false;
+        //                  }
+        //              break;
+        //          }
 
-                return true;
-            });
+        //          return true;
+        //      });
 
-            load_changed.connect ((event) => {
-                if (event == WebKit.LoadEvent.FINISHED) {
-                    var rectangle = get_window_properties ().get_geometry ();
-                    set_size_request (rectangle.width, rectangle.height);
-                }
-            });
-        }
+        //      load_changed.connect ((event) => {
+        //          if (event == WebKit.LoadEvent.FINISHED) {
+        //              var rectangle = get_window_properties ().get_geometry ();
+        //              set_size_request (rectangle.width, rectangle.height);
+        //          }
+        //      });
+        //  }
 
         private void launch_browser (string url) {
             if (!url.contains ("/embed/")) {
@@ -172,7 +171,7 @@ $$\int_{a}^{b} x^2 dx$$
                 } catch (Error e) {
                     warning ("No app to handle urls: %s", e.message);
                 }
-                stop_loading ();
+                // stop_loading ();
             }
         }
 
@@ -269,7 +268,7 @@ This is the footnote.<a href="#fnref:1" rev="footnote">&#8617;</a></li>
             </div>
                 </body>
             </html>""".printf(stylesheet, gen_title(cssname));
-            this.load_html (html, "file:///");
+            //  this.load_html (html, "file:///");
         }
 
         private string gen_title (string title) {
