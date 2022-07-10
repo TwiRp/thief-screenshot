@@ -37,30 +37,39 @@ namespace ThiefMD {
                 set_title (gen_title (dir));
             }
 
-            Timeout.add (1000, () => {
-                try {
-                    int x, y;
-                    get_position (out x, out y);
-                    warning ("At %d, %d", x, y);
-                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
-                    File org_check = File.new_for_path (Path.build_filename (theme_file.get_path (), filter + ".css"));
-                    if (org_check.query_exists ()) {
-                        File preview_exists = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-preview.png"));
-                        if (filter != "preview") {
-                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
-                        } else {
-                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+            File preview_check = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-preview.png"));
+            if (!preview_check.query_exists ())
+            {
+                Timeout.add (1000, () => {
+                    try {
+                        int x, y;
+                        get_position (out x, out y);
+                        warning ("At %d, %d", x, y);
+                        Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
+                        File org_check = File.new_for_path (Path.build_filename (theme_file.get_path (), filter + ".css"));
+                        if (org_check.query_exists ()) {
+                            File preview_exists = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-preview.png"));
+                            if (filter != "preview") {
+                                ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
+                            } else {
+                                ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+                            }
+                            if (!preview_exists.query_exists ()) {
+                                ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
+                            }
                         }
-                        if (!preview_exists.query_exists ()) {
-                            ss.save (Path.build_filename (theme_file.get_path (), dir + "-preview.png"), "png");
-                        }
+                    } catch (Error e) {
+                        warning ("Could not generate screenshot: %s", e.message);
                     }
-                } catch (Error e) {
-                    warning ("Could not generate screenshot: %s", e.message);
-                }
-                destroy ();
-                return false;
-            });
+                    destroy ();
+                    return false;
+                });
+            } else {
+                Timeout.add (150, () => {
+                    destroy ();
+                    return false;
+                });
+            }
         }
 
         private string gen_title (string title) {
@@ -178,19 +187,28 @@ namespace ThiefMD {
             show_all ();
             set_title (gen_title (dir + "-" + filter));
 
-            Timeout.add (1000, () => {
-                try {
-                    int x, y;
-                    get_position (out x, out y);
-                    warning ("At %d, %d", x, y);
-                    Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
-                    ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
-                } catch (Error e) {
-                    warning ("Could not generate screenshot: %s", e.message);
-                }
-                destroy ();
-                return false;
-            });
+            File preview_check = File.new_for_path (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"));
+            if (!preview_check.query_exists ())
+            {
+                Timeout.add (1000, () => {
+                    try {
+                        int x, y;
+                        get_position (out x, out y);
+                        warning ("At %d, %d", x, y);
+                        Gdk.Pixbuf ss = Gdk.pixbuf_get_from_window (get_screen ().get_root_window (), x, y, ss_width, ss_height);
+                        ss.save (Path.build_filename (theme_file.get_path (), dir + "-" + filter + "-preview.png"), "png");
+                    } catch (Error e) {
+                        warning ("Could not generate screenshot: %s", e.message);
+                    }
+                    destroy ();
+                    return false;
+                });
+            } else {
+                Timeout.add (150, () => {
+                    destroy ();
+                    return false;
+                });
+            }
         }
 
         private string gen_title (string title) {
